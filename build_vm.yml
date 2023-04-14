@@ -1,0 +1,4 @@
+- name: Build VM Component
+  hosts: localhost
+  roles:
+    - jritter.products.cmp_vm

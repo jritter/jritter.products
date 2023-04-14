@@ -1,0 +1,4 @@
+- name: Build Gitlab Component
+  hosts: localhost
+  roles:
+    - jritter.products.cmp_gitlab

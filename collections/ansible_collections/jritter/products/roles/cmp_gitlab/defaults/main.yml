@@ -1,0 +1,7 @@
+---
+# defaults file for cmp_gitlab
+
+ci_type: gitlab
+
+cmp_vars:
+  cmp_gitlab_instance_name: My Awesome Gitlab

@@ -1,0 +1,130 @@
+---
+# tasks file for cmp_gitlab
+
+- name: Set Random Name for GitLab
+  ansible.builtin.set_fact:
+    cmp_gitlab_name: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase'], length=8) }}"
+
+- name: Make sure that inventory exists
+  ansible.controller.inventory:
+    name: Configuration Items
+    description: Inventory that hosts all the Configuration Items
+    organization: Default
+
+- name: Add GitLab to Inventory
+  ansible.controller.host:
+    name: "{{ cmp_gitlab_name }}"
+    inventory: Configuration Items
+    state: present
+    variables:
+      parent: "{{ parent_ci | default('n/a') }}"
+      parent_ci_type: "{{ parent_ci_type | default('n/a') }}"
+      cmp_vars: "{{ cmp_vars | default() }}"
+      state: installing
+  register: inventory_entry
+
+- name: Make sure group exists
+  ansible.controller.group:
+    name: "{{ ci_type }}"
+    inventory: Configuration Items
+    state: present
+
+- name: Add VM to respective inventory groups
+  ansible.controller.group:
+    name: "{{ ci_type }}"
+    inventory: Configuration Items
+    hosts:
+      - "{{ cmp_gitlab_name }}"
+    state: present
+    preserve_existing_hosts: True
+
+- block:
+
+  # For GitLab, we need a DB and a VM
+  - name: Create Database for GitLab
+    ansible.controller.job_launch:
+      job_template: "Build Postgres Component"
+      extra_vars:
+        parent_ci: "{{ cmp_gitlab_name }}"
+        parent_ci_type: "{{ ci_type }}"
+        cmp_vars:
+          cmp_postgres_storage_size: 60Gi
+    register: db_job
+
+
+  - name: Create VM for GitLab
+    ansible.controller.job_launch:
+      job_template: "Build VM Component"
+      extra_vars:
+        parent_ci: "{{ cmp_gitlab_name }}"
+        parent_ci_type: "{{ ci_type }}"
+        cmp_vars:
+          cmp_vm_rootdisk_size: 120Gi
+    register: vm_job
+
+  - name: Wait for GitLab DB to be created
+    ansible.controller.job_wait:
+      job_id: "{{ db_job.id }}"
+      timeout: 120
+
+  - name: Wait for GitLab VM to be created
+    ansible.controller.job_wait:
+      job_id: "{{ vm_job.id }}"
+      timeout: 120
+
+  - name: Fetch the DB from the DB job
+    set_fact:
+      gitlab_db_ci: "{{ lookup('ansible.controller.controller_api', 'jobs/' + db_job.id|string )['artifacts']['ci_name'] }}"
+      gitlab_db_ci_id: "{{ lookup('ansible.controller.controller_api', 'jobs/' + db_job.id|string )['artifacts']['ci_id'] }}"
+
+  - name: Fetch the VM from the VM job
+    set_fact:
+      gitlab_vm_ci: "{{ lookup('ansible.controller.controller_api', 'jobs/' + vm_job.id|string )['artifacts']['ci_name'] }}"
+      gitlab_vm_ci_id: "{{ lookup('ansible.controller.controller_api', 'jobs/' + vm_job.id|string )['artifacts']['ci_id'] }}"
+
+
+  # We need some more DB details, so let's see if we can look those up from our Inventory:
+  - name: Lookup Database details
+    ansible.builtin.set_fact:
+      gitlab_db_username: "{{ lookup('ansible.controller.controller_api', 'hosts/' + gitlab_db_ci_id|string + '/variable_data' )['cmp_postgres_user'] }}"
+      gitlab_db_password: "{{ lookup('ansible.controller.controller_api', 'hosts/' + gitlab_db_ci_id|string + '/variable_data' )['cmp_postgres_password'] }}"
+      gitlab_db_name: "{{ lookup('ansible.controller.controller_api', 'hosts/' + gitlab_db_ci_id|string + '/variable_data' )['cmp_postgres_dbname'] }}"
+
+  - name: Deploying GitLab
+    ansible.builtin.debug:
+      msg: "Deploying {{ cmp_vars.cmp_gitlab_instance_name }} on VM {{ gitlab_vm_ci }}, connecting to DB {{ gitlab_db_name }}, with username {{ gitlab_db_username }} and {{ gitlab_db_password }}"
+
+  - name: Update Inventory
+    ansible.controller.host:
+      name: "{{ cmp_gitlab_name }}"
+      inventory: Configuration Items
+      state: present
+      variables:
+        parent: "{{ parent_ci | default('n/a') }}"
+        parent_ci_type: "{{ parent_ci_type | default('n/a') }}"
+        cmp_vars: "{{ cmp_vars | default() }}"
+        state: deployed
+
+  - name: Return the created CI
+    ansible.builtin.set_stats:
+      data:
+        ci_name: "{{ cmp_gitlab_name }}"
+        ci_id: "{{ inventory_entry.id }}"
+
+  rescue:
+  - name: Update Inventory
+    ansible.controller.host:
+      name: "{{ cmp_gitlab_name }}"
+      inventory: Configuration Items
+      state: present
+      variables:
+        parent: "{{ parent_ci | default('n/a') }}"
+        parent_ci_type: "{{ parent_ci_type | default('n/a') }}"
+        cmp_vars: "{{ cmp_vars | default() }}"
+        state: failed
+        ansible_failed_task: "{{ ansible_failed_task }}"
+        ansible_failed_result: "{{ ansible_failed_result }}"
+
+  - name: Failing after rescue
+    ansible.builtin.fail:
+      msg: "{{ ansible_failed_result }}"

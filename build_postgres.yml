@@ -1,0 +1,4 @@
+- name: Build Postgres DB Component
+  hosts: localhost
+  roles:
+    - jritter.products.cmp_postgres

@@ -1,0 +1,7 @@
+---
+# defaults file for cmp_postgres
+
+ci_type: postgres
+
+cmp_vars:
+  cmp_postgres_storage_size: 30Gi

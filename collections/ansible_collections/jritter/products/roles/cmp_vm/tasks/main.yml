@@ -1,0 +1,95 @@
+---
+# tasks file for cmp_vm
+
+- name: Set Random Hostname
+  ansible.builtin.set_fact:
+    cmp_vm_hostname: "{{ lookup('ansible.builtin.password', '/dev/null', chars=['ascii_lowercase'], length=8) }}"
+
+- name: Make sure that inventory exists
+  ansible.controller.inventory:
+    name: Configuration Items
+    description: Inventory that hosts all the Configuration Items
+    organization: Default
+
+- name: Add VM to Inventory
+  ansible.controller.host:
+    name: "{{ cmp_vm_hostname }}"
+    inventory: Configuration Items
+    state: present
+    variables:
+      parent: "{{ parent_ci | default('n/a') }}"
+      parent_ci_type: "{{ parent_ci_type | default('n/a') }}"
+      cmp_vars: "{{ cmp_vars | default() }}"
+      state: installing
+  register: inventory_entry
+
+- name: Make sure group exists
+  ansible.controller.group:
+    name: "{{ ci_type }}"
+    inventory: Configuration Items
+    state: present
+
+- name: Add VM to respective inventory groups
+  ansible.controller.group:
+    name: "{{ ci_type }}"
+    inventory: Configuration Items
+    hosts:
+      - "{{ cmp_vm_hostname }}"
+    state: present
+    preserve_existing_hosts: True
+- block:
+  - name: Create IP address
+    ansible.controller.job_launch:
+      job_template: "Build IP Component"
+      extra_vars:
+        parent_ci: "{{ cmp_vm_hostname }}"
+        parent_ci_type: "{{ ci_type }}"
+    register: job
+
+  # In theory we could start multiple concurrent jobs here...
+  - name: Wait for IP to be created
+    ansible.controller.job_wait:
+      job_id: "{{ job.id }}"
+      timeout: 120
+
+  - name: Fetch the IP from the job
+    set_fact:
+      vm_ip: "{{ lookup('ansible.controller.controller_api', 'jobs/' + job.id|string )['artifacts']['ci_name'] }}"
+
+  - name: Creating VM...
+    ansible.builtin.debug:
+      msg: "Creating VM {{ cmp_vm_hostname }} with IP {{ vm_ip }} and a root disk of {{ cmp_vars.cmp_vm_rootdisk_size }}"
+
+  - name: Update state in Inventory
+    ansible.controller.host:
+      name: "{{ cmp_vm_hostname }}"
+      inventory: "Configuration Items"
+      state: present
+      variables:
+        parent: "{{ parent_ci | default('n/a') }}"
+        parent_ci_type: "{{ parent_ci_type | default('n/a') }}"
+        cmp_vars: "{{ cmp_vars | default() }}"
+        state: deployed
+
+  - name: Return the created CI
+    ansible.builtin.set_stats:
+      data:
+        ci_name: "{{ cmp_vm_hostname }}"
+        ci_id: "{{ inventory_entry.id }}"
+  rescue:
+  - name: Update Inventory
+    ansible.controller.host:
+      name: "{{ cmp_vm_hostname }}"
+      inventory: Configuration Items
+      state: present
+      variables:
+        parent: "{{ parent_ci | default('n/a') }}"
+        parent_ci_type: "{{ parent_ci_type | default('n/a') }}"
+        cmp_vars: "{{ cmp_vars | default() }}"
+        state: failed
+        ansible_failed_task: "{{ ansible_failed_task }}"
+        ansible_failed_result: "{{ ansible_failed_result }}"
+
+  - name: Failing after rescue
+    ansible.builtin.fail:
+      msg: "{{ ansible_failed_result }}"
