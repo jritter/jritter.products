@@ -36,6 +36,8 @@
     hosts:
       - "{{ cmp_ip }}"
     state: present
+    preserve_existing_hosts: True
+
 - block:
   - name: Output IP
     ansible.builtin.debug:
