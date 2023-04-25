@@ -1,0 +1,9 @@
+- name: Destroy VMS Component
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Destroy VM
+    jritter.products.configuration_item:
+      name: myvm
+      type: vm
+      state: absent

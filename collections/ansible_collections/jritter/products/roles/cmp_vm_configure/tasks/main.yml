@@ -85,12 +85,28 @@
     delay: 2
     delegate_to: virthost
 
+  - name: Get IP Address of domain
+    ansible.builtin.shell:
+      cmd: "virsh domifaddr {{ inventory_hostname }} | grep vnet | awk '{ print $4 }' | awk -F/ '{ print $1 }'"
+    register: vm_ip
+    until: vm_ip.stdout != ''
+    retries: 15
+    delay: 10
+    delegate_to: virthost
+
+  - name: Save IP
+    ansible.builtin.set_stats:
+      data:
+        vm_ip: "{{ vm_ip.stdout }}"
+        ansible_host: "{{ vm_ip.stdout }}"
+
   - name: Ensure temporary file is deleted
     ansible.builtin.file:
       path: "/tmp/{{ ci_variables.base_image_name }}"
       state: absent
     when: ci_variables.cleanup_tmp | bool
     delegate_to: virthost
+
   rescue:
   
   - name: Failing after rescue

@@ -150,6 +150,11 @@ def run_module():
 
         # Now we can update the ci
         variables['ci_state'] = 'deployed'
+        variables['ci_artifacts'] = results['json']['artifacts']
+
+        if 'ansible_host' in results['json']['artifacts'].keys():
+            variables['ansible_host'] = results['json']['artifacts']['ansible_host']
+
         ci_fields['variables'] = json.dumps(variables)
         ci = module.create_or_update_if_needed(
             ci, ci_fields, endpoint='hosts', item_type='host', auto_exit=False)
