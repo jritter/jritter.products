@@ -1,0 +1,4 @@
+---
+# defaults file for cmp_postgres
+
+ci_type: postgres

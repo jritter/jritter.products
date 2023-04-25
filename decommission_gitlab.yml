@@ -1,0 +1,6 @@
+---
+- name: Decommission Gitlab Component
+  hosts: "{{ ci_name }}"
+  gather_facts: no
+  roles:
+    - jritter.products.cmp_gitlab_decommission

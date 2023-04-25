@@ -1,0 +1,17 @@
+---
+# defaults file for cmp_vm
+
+ci_type: vm
+
+ci_default_variables:
+  base_image_name: Fedora-Cloud-Base-38-1.6.x86_64.qcow2
+  base_image_url: "https://mirror.init7.net/fedora/fedora/linux/releases/38/Cloud/x86_64/images/Fedora-Cloud-Base-38-1.6.x86_64.qcow2"
+  base_image_sha: d334670401ff3d5b4129fcc662cf64f5a6e568228af59076cc449a4945318482
+  libvirt_pool_dir: "/var/lib/libvirt/images"
+  vm_name: f38-dev
+  vm_vcpus: 2
+  vm_ram_mb: 2048
+  vm_net: default
+  vm_root_pass: test123
+  cleanup_tmp: no
+  ssh_key: /root/.ssh/id_ecdsa_aap.pub

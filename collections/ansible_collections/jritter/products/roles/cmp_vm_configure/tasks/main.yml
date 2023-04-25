@@ -1,0 +1,98 @@
+---
+# tasks file for cmp_vm_configure
+
+- name: Merge default variables with passed in variables
+  set_fact:
+    ci_variables: "{{ ci_default_variables | combine(ci_variables) }}"
+
+- block:
+  - name: Get IP for VM
+    jritter.products.configuration_item:
+      name: "{{ inventory_hostname }}_ip"
+      type: ip
+      state: present
+      variables:
+    register: gitlab_ip
+    delegate_to: localhost
+
+  - name: Print IP for VM
+    ansible.builtin.debug:
+      var: gitlab_ip
+
+  - name: Print ci_variables
+    ansible.builtin.debug:
+      var: ci_variables
+
+  - name: Ensure requirements in place
+    package:
+      name:
+        - guestfs-tools
+        - python3-libvirt
+      state: present
+    become: yes
+    delegate_to: virthost
+
+  - name: Get VMs list
+    community.libvirt.virt:
+      command: list_vms
+    register: existing_vms
+    changed_when: no
+    delegate_to: virthost
+  
+  - name: Create VM if not exists
+    block:
+    - name: Download base image
+      ansible.builtin.get_url:
+        url: "{{ ci_variables.base_image_url }}"
+        dest: "/tmp/{{ ci_variables.base_image_name }}"
+        checksum: "sha256:{{ ci_variables.base_image_sha }}"
+      delegate_to: virthost
+
+    - name: Copy base image to libvirt directory
+      ansible.builtin.copy:
+        dest: "{{ ci_variables.libvirt_pool_dir }}/{{ inventory_hostname }}.qcow2"
+        src: "/tmp/{{ ci_variables.base_image_name }}"
+        force: no
+        remote_src: yes 
+        mode: 0660
+      register: copy_results
+      delegate_to: virthost
+
+    - name: Configure the image
+      ansible.builtin.command: |
+        virt-customize -a {{ ci_variables.libvirt_pool_dir }}/{{ inventory_hostname }}.qcow2 \
+        --hostname {{ inventory_hostname }} \
+        --root-password password:{{ ci_variables.vm_root_pass }} \
+        --ssh-inject 'root:file:{{ ci_variables.ssh_key }}' \
+        --uninstall cloud-init --selinux-relabel
+      when: copy_results is changed
+      delegate_to: virthost
+
+    - name: Define vm
+      community.libvirt.virt:
+        command: define
+        xml: "{{ lookup('template', 'vm-template.xml.j2') }}"
+      delegate_to: virthost
+    when: inventory_hostname not in existing_vms.list_vms
+    
+  - name: Ensure VM is started
+    community.libvirt.virt:
+      name: "{{ inventory_hostname }}"
+      state: running
+    register: vm_start_results
+    until: "vm_start_results is success"
+    retries: 15
+    delay: 2
+    delegate_to: virthost
+
+  - name: Ensure temporary file is deleted
+    ansible.builtin.file:
+      path: "/tmp/{{ ci_variables.base_image_name }}"
+      state: absent
+    when: ci_variables.cleanup_tmp | bool
+    delegate_to: virthost
+  rescue:
+  
+  - name: Failing after rescue
+    ansible.builtin.fail:
+      msg: "{{ ansible_failed_result }}"

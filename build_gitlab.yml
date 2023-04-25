@@ -1,4 +1,12 @@
 - name: Build Gitlab Component
   hosts: localhost
-  roles:
-    - jritter.products.cmp_gitlab
+  gather_facts: no
+  tasks:
+  - name: Deploy Gitlab
+    jritter.products.configuration_item:
+      name: mygitlab
+      type: gitlab
+      state: present
+      variables:
+        name: "Hello Gitlab!"
+

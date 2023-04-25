@@ -1,2 +1,3 @@
 *.retry
 *.log
+collections/ansible_collections/community*

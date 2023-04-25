@@ -1,6 +1,12 @@
----
 - name: Build IP Component
   hosts: localhost
   gather_facts: no
-  roles:
-    - jritter.products.cmp_ip
+  tasks:
+  - name: Deploy IP
+    jritter.products.configuration_item:
+      name: myip
+      type: ip
+      state: present
+      variables:
+        
+

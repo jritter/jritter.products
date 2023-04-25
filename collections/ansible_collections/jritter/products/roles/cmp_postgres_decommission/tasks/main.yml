@@ -1,0 +1,24 @@
+---
+# tasks file for cmp_postgres_decommission
+
+- name: Stop and disable PostgreSQL Service
+  ansible.builtin.service:
+    name: postgresql
+    state: stopped
+    enabled: false
+  delegate_to: "{{ inventory_hostname }}_vm"
+
+- name: Uninstall Postgres on the VM
+  ansible.builtin.package:
+    name: postgresql-server
+    state: removed
+  delegate_to: "{{ inventory_hostname }}_vm"
+
+- name: Destroy VM for Postgres
+  jritter.products.configuration_item:
+    name: "{{ inventory_hostname }}_vm"
+    type: vm
+    state: absent
+    variables:
+  register: postgres_vm
+  delegate_to: localhost

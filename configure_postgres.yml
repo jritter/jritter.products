@@ -1,0 +1,6 @@
+---
+- name: Configure Postgres Component
+  hosts: "{{ ci_name }}"
+  gather_facts: no
+  roles:
+    - jritter.products.cmp_postgres_configure

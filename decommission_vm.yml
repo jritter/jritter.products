@@ -1,0 +1,6 @@
+---
+- name: Decommission VM Component
+  hosts: "{{ ci_name }}"
+  gather_facts: no
+  roles:
+    - jritter.products.cmp_vm_decommission

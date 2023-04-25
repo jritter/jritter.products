@@ -1,0 +1,39 @@
+- name: Deploy CI
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Deploy CI
+    jritter.products.configuration_item:
+      name: test
+      type: ip
+      state: present
+      variables:
+        foo: bar
+
+  - name: Reconfigure CI without config change
+    jritter.products.configuration_item:
+      name: test
+      type: ip
+      state: present
+      variables:
+        foo: bar
+
+  - name: Reconfigure CI with config change
+    jritter.products.configuration_item:
+      name: test
+      type: ip
+      state: present
+      variables:
+        foo: baz
+        
+- name: Undeploy CI
+  hosts: localhost
+  gather_facts: no
+  tasks:
+  - name: Undeploy CI
+    jritter.products.configuration_item:
+      name: test
+      type: ip
+      state: absent
+      variables:
+        

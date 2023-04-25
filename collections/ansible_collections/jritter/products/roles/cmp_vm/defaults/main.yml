@@ -1,7 +1,0 @@
----
-# defaults file for cmp_vm
-
-ci_type: vm
-
-cmp_vars:
-  cmp_vm_rootdisk_size: 100Gi

@@ -1,0 +1,6 @@
+---
+- name: Decommission IP Component
+  hosts: "{{ ci_name }}"
+  gather_facts: no
+  roles:
+    - jritter.products.cmp_ip_decommission

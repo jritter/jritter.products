@@ -2,25 +2,139 @@
   hosts: localhost
   gather_facts: false
   tasks:
-    - name: Install Build IP Component Template
+
+    - name: Install Configure IP Component Template
       ansible.controller.job_template:
-        name: Build IP Component
+        name: configure_ip
         job_type: "run"
         organization: "Default"
-        inventory: "Localhost"
+        inventory: "Configuration Items"
         project: "Products"
-        playbook: "build_ip.yml"
+        playbook: "configure_ip.yml"
         credentials:
           - "AAP"
         ask_variables_on_launch: true
         state: "present"
 
-    - name: Install Build VM Component Template
+    - name: Install Decommission IP Component Template
       ansible.controller.job_template:
-        name: Build VM Component
+        name: decommission_ip
         job_type: "run"
         organization: "Default"
-        inventory: "Localhost"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "decommission_ip.yml"
+        credentials:
+          - "AAP"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Configure VM Component Template
+      ansible.controller.job_template:
+        name: configure_vm
+        job_type: "run"
+        organization: "Default"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "configure_vm.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Decommission VM Component Template
+      ansible.controller.job_template:
+        name: decommission_vm
+        job_type: "run"
+        organization: "Default"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "decommission_vm.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Configure Postgres Component Template
+      ansible.controller.job_template:
+        name: configure_postgres
+        job_type: "run"
+        organization: "Default"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "configure_postgres.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Decommission Postgres Component Template
+      ansible.controller.job_template:
+        name: decommission_postgres
+        job_type: "run"
+        organization: "Default"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "decommission_postgres.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Configure GitLab Component Template
+      ansible.controller.job_template:
+        name: configure_gitlab
+        job_type: "run"
+        organization: "Default"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "configure_gitlab.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Decommission GitLab Component Template
+      ansible.controller.job_template:
+        name: decommission_gitlab
+        job_type: "run"
+        organization: "Default"
+        inventory: "Configuration Items"
+        project: "Products"
+        playbook: "decommission_gitlab.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+
+# Build Templates, these are just for testing the roles
+    - name: Install Build IP Template
+      ansible.controller.job_template:
+        name: build_ip
+        job_type: "run"
+        organization: "Default"
+        inventory: "Local"
+        project: "Products"
+        playbook: "build_ip.yml"
+        credentials:
+          - "AAP"
+          - "SSH Automation"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Build VM Template
+      ansible.controller.job_template:
+        name: build_vm
+        job_type: "run"
+        organization: "Default"
+        inventory: "Local"
         project: "Products"
         playbook: "build_vm.yml"
         credentials:
@@ -28,12 +142,12 @@
         ask_variables_on_launch: true
         state: "present"
 
-    - name: Install Build Postgres Component Template
+    - name: Install Build Postgres Template
       ansible.controller.job_template:
-        name: Build Postgres Component
+        name: build_postgres
         job_type: "run"
         organization: "Default"
-        inventory: "Localhost"
+        inventory: "Local"
         project: "Products"
         playbook: "build_postgres.yml"
         credentials:
@@ -41,14 +155,27 @@
         ask_variables_on_launch: true
         state: "present"
 
-    - name: Install Build GitLab Component Template
+    - name: Install Build Gitlab Template
       ansible.controller.job_template:
-        name: Build GitLab Component
+        name: build_gitlab
         job_type: "run"
         organization: "Default"
-        inventory: "Localhost"
+        inventory: "Local"
         project: "Products"
         playbook: "build_gitlab.yml"
+        credentials:
+          - "AAP"
+        ask_variables_on_launch: true
+        state: "present"
+
+    - name: Install Destroy Postgres Template
+      ansible.controller.job_template:
+        name: destroy_postgres
+        job_type: "run"
+        organization: "Default"
+        inventory: "Local"
+        project: "Products"
+        playbook: "destroy_postgres.yml"
         credentials:
           - "AAP"
         ask_variables_on_launch: true

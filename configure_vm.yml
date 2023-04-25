@@ -1,0 +1,7 @@
+---
+- name: Configure VM Component
+  hosts: "{{ ci_name }}"
+  gather_facts: no
+  become: yes
+  roles:
+    - jritter.products.cmp_vm_configure

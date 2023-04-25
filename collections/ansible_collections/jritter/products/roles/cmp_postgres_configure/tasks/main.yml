@@ -1,0 +1,34 @@
+---
+# tasks file for cmp_postgres
+
+# We need to handle the variables that should be added to the CI, which exists at this point.
+
+
+- name: Get VM for Postgres
+  jritter.products.configuration_item:
+    name: "{{ inventory_hostname }}_vm"
+    type: vm
+    state: present
+    variables:
+  register: postgres_vm
+  delegate_to: localhost
+
+- name: Install Postgres on the VM
+  ansible.builtin.package:
+    name: postgresql-server
+    state: installed
+  delegate_to: "{{ postgres_vm.ci_name }}"
+
+- name: Initialize the database
+  ansible.builtin.command:
+    cmd: /usr/bin/postgresql-setup --initdb
+    creates: /var/lib/pgsql/initdb_postgresql.log
+  delegate_to: "{{ postgres_vm.ci_name }}"
+
+- name: Enable and start service
+  ansible.builtin.service:
+    name: postgresql
+    state: started
+    enabled: true
+  delegate_to: "{{ postgres_vm.ci_name }}"
+

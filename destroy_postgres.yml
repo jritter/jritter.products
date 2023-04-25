@@ -1,12 +1,10 @@
-- name: Build Postgres Component
+- name: Destroy Postgres Component
   hosts: localhost
   gather_facts: no
   tasks:
-  - name: Deploy Postgres
+  - name: Destroy Postgres
     jritter.products.configuration_item:
       name: mypostgres
       type: postgres
-      state: present
-      variables:
-        cmp_postgres_storage_size: 20Gi
+      state: absent
         

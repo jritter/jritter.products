@@ -1,0 +1,39 @@
+---
+# tasks file for cmp_vm_decommission
+
+- name: Merge default variables with passed in variables
+  ansible.builtin.set_fact:
+    ci_variables: "{{ ci_default_variables | combine(ci_variables) }}"
+
+- block:
+
+  - name: Ensure VM is stopped
+    community.libvirt.virt:
+      name: "{{ inventory_hostname }}"
+      state: destroyed
+    delegate_to: virthost
+
+  - name: Ensure VM is undefined
+    community.libvirt.virt:
+      name: "{{ inventory_hostname }}"
+      command: undefine
+    delegate_to: virthost
+
+  - name: Ensure Disk file is deleted
+    ansible.builtin.file:
+      path: "{{ ci_variables.libvirt_pool_dir }}/{{ inventory_hostname }}.qcow2"
+      state: absent
+    delegate_to: virthost
+
+  - name: Decommission IP for VM
+    jritter.products.configuration_item:
+      name: "{{ inventory_hostname }}_ip"
+      type: ip
+      state: absent
+      variables:
+    delegate_to: localhost
+
+  rescue:
+  - name: Failing after rescue
+    ansible.builtin.fail:
+      msg: "{{ ansible_failed_result }}"
